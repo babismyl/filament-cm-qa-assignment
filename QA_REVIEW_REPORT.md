@@ -189,6 +189,8 @@ When `getImageUrl()` returns `null`, the `$defaultImageUrl` should be used as a 
 
 **Issue:** During parallel uploads, one or more files occasionally fail and require manual retry.
 
+**Testing Evidence:** See `videos/intermittent_upload_failure.gif` for video demonstration of the issue.
+
 **Root Causes:**
 1. Parallel upload race conditions
 2. Session locking conflicts (even with database sessions)
@@ -211,6 +213,8 @@ When `getImageUrl()` returns `null`, the `$defaultImageUrl` should be used as a 
 ### 3.2 Database Lock Issue - macOS Specific (Critical Finding)
 
 **Issue:** After uploading files and clicking "Save changes", the application hangs indefinitely on macOS.
+
+**Testing Evidence:** See `videos/db_lock_issue_mac.gif` for video demonstration of the issue.
 
 **Root Cause:**
 - **macOS-specific**: `fileprovi` daemon (macOS file system daemon) holds persistent write lock on SQLite database
@@ -319,6 +323,18 @@ When `getImageUrl()` returns `null`, the `$defaultImageUrl` should be used as a 
 **Platform-Specific Findings:**
 - **Windows**: No database lock issues observed
 - **macOS**: Database lock issues due to `fileprovi` daemon interference
+
+### Testing Evidence Videos
+
+The following video recordings demonstrate the issues identified during testing:
+
+1. **Intermittent Upload Failures**: `videos/intermittent_upload_failure.gif`
+   - Demonstrates files failing during parallel uploads and requiring manual retry
+   - See Section 3.1 for details
+
+2. **Database Lock Issue (macOS)**: `videos/db_lock_issue_mac.gif`
+   - Demonstrates application hanging after file uploads on macOS
+   - See Section 3.2 for details
 
 ---
 
