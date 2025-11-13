@@ -307,6 +307,70 @@ When `getImageUrl()` returns `null`, the `$defaultImageUrl` should be used as a 
 
 ---
 
+## 6. Automated Test Suite
+
+An automated test suite has been created to validate file upload ordering behavior at the database storage level. The test suite is located in `tests/Feature/FileUploadOrderTest.php`.
+
+### Test Suite Overview
+
+**Important Limitation:** These tests validate database storage order but do NOT reproduce the actual race condition bug described in issue #15308. The race condition occurs at the FilePond/Livewire component level during parallel uploads, which cannot be easily tested in PHPUnit without full browser automation (Laravel Dusk/Selenium) or mocking FilePond's parallel upload behavior.
+
+Manual testing with real FilePond uploads is required to verify the bug. These tests serve as unit tests for the data model layer only.
+
+### Test Data
+
+Test images are available in `tests/TestData/images/` directory:
+- `1.jpg` - Large file (393KB) - simulates slower upload
+- `2.jpg` - Small file (3KB) - simulates faster upload
+- `3.jpg` - Medium file (130KB)
+- `4.jpg` - Largest file (419KB) - simulates slowest upload
+- `5.jpg` - Small file (6KB) - simulates fast upload
+
+These test images with varying file sizes are used to simulate race condition scenarios where smaller files would complete uploading faster than larger files during parallel uploads.
+
+### Test Cases
+
+1. **`test_files_maintain_selection_order()`**
+   - **Purpose**: Validates that files maintain their selection order when stored in the database
+   - **Test Data**: 5 files with varying sizes (393KB, 3KB, 130KB, 419KB, 6KB) to simulate race condition scenarios. Test images are located in `tests/TestData/images/` (1.jpg through 5.jpg)
+   - **Validation**: Verifies files are stored in selection order (1.jpg, 2.jpg, 3.jpg, 4.jpg, 5.jpg)
+   - **Note**: This test simulates correct behavior but doesn't reproduce the actual race condition
+
+2. **`test_detects_race_condition_ordering()`**
+   - **Purpose**: Validates that the test framework can detect incorrect ordering (race condition pattern)
+   - **Test Data**: Files stored in completion order (smaller files first: 2.jpg, 5.jpg, 3.jpg, 1.jpg, 4.jpg) instead of selection order. Uses test images from `tests/TestData/images/`
+   - **Validation**: Verifies that the test detects when files are NOT in selection order
+   - **Note**: This test manually simulates the race condition pattern to ensure test framework can detect ordering issues
+
+3. **`test_file_order_preserved_on_update()`**
+   - **Purpose**: Validates that file order is preserved when updating existing images
+   - **Test Data**: Initial upload of 2 files, followed by adding 2 more files
+   - **Validation**: Verifies that all 4 files maintain their order (1.jpg, 2.jpg, 3.jpg, 4.jpg)
+
+4. **`test_single_file_upload()`**
+   - **Purpose**: Edge case test for single file upload
+   - **Test Data**: Single file upload
+   - **Validation**: Verifies single file is stored correctly
+
+5. **`test_empty_images_array()`**
+   - **Purpose**: Edge case test for empty images array
+   - **Test Data**: Empty array
+   - **Validation**: Verifies empty array is handled correctly without errors
+
+### Test Suite Limitations
+
+- **Cannot reproduce actual race condition**: The race condition occurs at the FilePond/Livewire level during parallel uploads, which requires browser automation to test properly
+- **Database layer only**: Tests validate database storage order, not the actual upload process
+- **Manual testing required**: To verify the actual bug, manual testing with real FilePond uploads is necessary
+
+### Running the Tests
+
+```bash
+php artisan test --filter FileUploadOrderTest
+```
+
+---
+
 ## Appendix: Test Environment
 
 **Filament Version:** v3.2.132  
